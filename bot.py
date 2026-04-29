@@ -9,7 +9,9 @@ from telegram.ext import (
     filters,
     ContextTypes,
 )
-TOKEN = os.getenv("8612847663:AAHJFIdN7Fu41bOiDZv8Khn49f1GwNHVu38")
+
+# 🔐 TOKEN (da Railway Variables)
+TOKEN = os.getenv("BOT_TOKEN")
 
 FILE_DB = "users.json"
 
@@ -25,7 +27,7 @@ def save_users(data):
 
 users = load_users()
 
-# 🔐 Controllo admin
+# 🔐 ADMIN CHECK
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
@@ -36,24 +38,19 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ➕ ADD
 async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
-        return await update.message.reply_text("Solo admin bro ❌")
+        return await update.message.reply_text("Solo admin ❌")
 
     if not context.args:
-        return await update.message.reply_text("Uso: /add nome @username oppure rispondi a qualcuno")
+        return await update.message.reply_text("Uso: /add nome")
 
     name = context.args[0].lower()
 
     if update.message.reply_to_message:
         user = update.message.reply_to_message.from_user
-
-        if user.username:
-            tag = f"@{user.username}"
-        else:
-            tag = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
-
+        tag = f"@{user.username}" if user.username else f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
         users[name] = tag
         save_users(users)
-        return await update.message.reply_text(f"Aggiunto {name} ✅")
+        return await update.message.reply_text(f"Aggiunto {name} ✅", parse_mode="HTML")
 
     if len(context.args) > 1:
         users[name] = context.args[1]
@@ -93,7 +90,7 @@ async def edit_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if name in users:
         users[name] = new_tag
         save_users(users)
-        await update.message.reply_text(f"Aggiornato {name} ✏")
+        await update.message.reply_text("Aggiornato ✏")
     else:
         await update.message.reply_text("Nome non trovato")
 
@@ -103,24 +100,12 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("Vuoto")
 
     msg = "\n".join([f"{k} → {v}" for k, v in users.items()])
-    await update.message.reply_text(msg)
-
-# ⚙️ Modalità (ON/OFF mention)
-mention_mode = False
-
-async def toggle_mode(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global mention_mode
-
-    if not await is_admin(update, context):
-        return await update.message.reply_text("Solo admin ❌")
-
-    mention_mode = not mention_mode
-    stato = "ON (solo se mi tagghi)" if mention_mode else "OFF (sempre attivo)"
-    await update.message.reply_text(f"Modalità: {stato}")
+    await update.message.reply_text(msg, parse_mode="HTML")
 
 # 🤖 AUTO TAG
 async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    import re
+    if not update.message or not update.message.text:
+        return
 
     text = update.message.text.lower()
     clean_text = re.sub(r'[^\w\s]', '', text)
@@ -128,22 +113,20 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     found = []
 
     for name in users:
-        clean_name = name.lower()
-
-        if clean_name in clean_text.split():
+        if name.lower() in clean_text.split():
             found.append(users[name])
 
     if found:
         await update.message.reply_text(" ".join(set(found)), parse_mode="HTML")
 
-# ▶️ AVVIO
-app = ApplicationBuilder().token("8612847663:AAHJFIdN7Fu41bOiDZv8Khn49f1GwNHVu38").build()
+# ▶️ START
+app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add_user))
 app.add_handler(CommandHandler("remove", remove_user))
 app.add_handler(CommandHandler("edit", edit_user))
 app.add_handler(CommandHandler("list", list_users))
-app.add_handler(CommandHandler("mode", toggle_mode))
+app.add_handler(CommandHandler("mode", lambda u, c: None))  # opzionale
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
 
