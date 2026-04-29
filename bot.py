@@ -9,6 +9,7 @@ from telegram.ext import (
     filters,
     ContextTypes,
 )
+TOKEN = os.getenv("8612847663:AAHJFIdN7Fu41bOiDZv8Khn49f1GwNHVu38")
 
 FILE_DB = "users.json"
 
@@ -136,7 +137,7 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(" ".join(set(found)), parse_mode="HTML")
 
 # ▶️ AVVIO
-app = ApplicationBuilder().token("8612847663:AAG9n2rQ5Xht-n9yfr8eIhb6LVoB3XHhPYk").build()
+app = ApplicationBuilder().token("8612847663:AAHJFIdN7Fu41bOiDZv8Khn49f1GwNHVu38").build()
 
 app.add_handler(CommandHandler("add", add_user))
 app.add_handler(CommandHandler("remove", remove_user))
@@ -146,4 +147,6 @@ app.add_handler(CommandHandler("mode", toggle_mode))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
 
-app.run_polling()
+if __name__ == "__main__":
+    print("Bot avviato correttamente")
+    app.run_polling()
