@@ -75,12 +75,9 @@ async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not await is_admin(update, context):
-        return await update.message.reply_text("Solo admin ❌")
+        return
 
     lines = (update.message.text or "").split("\n")[1:]
-
-    if not lines:
-        return await update.message.reply_text("Formato:\n/add\nnome → @tag")
 
     for line in lines:
         if "→" in line:
@@ -88,29 +85,38 @@ async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             users[name.strip().lower()] = tag.strip()
 
     save_users(users)
-    await update.message.reply_text("Aggiunti ✅")
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Aggiunti ✅"
+    )
 
 # =========================
-# LIST USERS (FIXATA)
+# LIST USERS
 # =========================
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not users:
-        return await update.message.reply_text("Vuoto")
+        await context.bot.send_message(update.effective_chat.id, "Vuoto")
+        return
 
     msg = "\n".join([f"{k} → {v}" for k, v in users.items()])
-    await update.message.reply_text(msg)
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg
+    )
 
 # =========================
-# AUTO TAG + SAVE GROUP
+# AUTO TAG + MULTIGRUPPO + COUNTER
 # =========================
 async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global message_count, last_message_time
 
-    if not update.message or not update.message.text:
+    if not update.message:
         return
 
-    # salva gruppo automaticamente (MULTIGRUPPO)
     chat_id = update.effective_chat.id
+
     if chat_id not in groups:
         groups.append(chat_id)
         save_groups(groups)
@@ -118,55 +124,64 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_count += 1
     last_message_time = time.time()
 
-    text = re.sub(r'[^\w\s]', '', update.message.text.lower())
+    text = update.message.text or ""
+    text = re.sub(r'[^\w\s]', '', text.lower())
 
     found = [users[n] for n in users if n in text.split()]
 
     if found:
-        await update.message.reply_text(" ".join(set(found)))
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=" ".join(set(found))
+        )
 
-    # ogni 20 messaggi
     if message_count % 20 == 0:
-        await update.message.reply_text(random.choice([
-            "non freca",
-            "no way",
-            "type shi",
-            "Sybau"
-        ]))
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=random.choice([
+                "non freca",
+                "no way",
+                "type shi",
+                "Sybau"
+            ])
+        )
 
 # =========================
-# HUMAN BUG (NON TOCCATE FRASI)
+# HUMAN BUG (FRASI NON MODIFICATE)
 # =========================
 last_bug_time = 0
 
 async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global last_bug_time
 
-    if not update.message or not update.message.text:
+    if not update.message:
         return
 
     now = time.time()
 
-    if now - last_bug_time < 20:
+    if now - last_bug_time < 30:
         return
 
-    if random.randint(1, 4) != 1:
+    if random.randint(1, 2) != 1:
         return
 
     last_bug_time = now
 
-    await update.message.reply_text(random.choice([
-        "errore... qualcosa non freca",
-        "analizzando... troppe nane",
-        "strano... nessuno litiga oggi",
-        "sistema instabile... Galif è bianco",
-        "attenzione: comportamento sospetto, Vansh non sta simpando",
-        "qualcuno ha detto una minchiata",
-        "errore 404: Galif non trovato, è troppo negro",
-        "quanto cazzo parli Vansh",
-        "controllo in corso... nessuna nana avvistata 🤔",
-        "error 404: Vansh è troppo bianco ⚠️"
-    ]))
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=random.choice([
+            "errore... qualcosa non freca",
+            "analizzando... troppe nane",
+            "strano... nessuno litiga oggi",
+            "sistema instabile... Galif è bianco",
+            "attenzione: comportamento sospetto, Vansh non sta simpando",
+            "qualcuno ha detto una minchiata",
+            "errore 404: Galif non trovato, è troppo negro",
+            "quanto cazzo parli Vansh",
+            "controllo in corso... nessuna nana avvistata 🤔",
+            "error 404: Vansh è troppo bianco ⚠️"
+        ])
+    )
 
 # =========================
 # INATTIVITÀ MULTIGRUPPO
@@ -179,7 +194,7 @@ async def inactivity_bot(app):
 
         idle = time.time() - last_message_time
 
-        if idle > 600:  # 10 minuti
+        if idle > 600:
             for chat_id in groups:
                 try:
                     await app.bot.send_message(
