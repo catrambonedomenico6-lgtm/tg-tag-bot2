@@ -16,7 +16,11 @@ from telegram.ext import (
 TOKEN = os.getenv("BOT_TOKEN")
 
 FILE_DB = "users.json"
+GROUPS_FILE = "groups.json"
 
+# =========================
+# USERS DB
+# =========================
 def load_users():
     if os.path.exists(FILE_DB):
         with open(FILE_DB, "r") as f:
@@ -29,12 +33,33 @@ def save_users(data):
 
 users = load_users()
 
-# 🧠 STATO BOT
+# =========================
+# GROUPS DB (MULTIGRUPPO)
+# =========================
+def load_groups():
+    if os.path.exists(GROUPS_FILE):
+        try:
+            with open(GROUPS_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_groups(data):
+    with open(GROUPS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+groups = load_groups()
+
+# =========================
+# STATO BOT
+# =========================
 message_count = 0
 last_message_time = time.time()
-chat_id_global = None
 
-# 🔐 ADMIN CHECK
+# =========================
+# ADMIN CHECK
+# =========================
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     member = await context.bot.get_chat_member(
         update.effective_chat.id,
@@ -42,7 +67,9 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return member.status in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]
 
-# ➕ ADD
+# =========================
+# ADD USERS
+# =========================
 async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -63,15 +90,30 @@ async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_users(users)
     await update.message.reply_text("Aggiunti ✅")
 
-# 🤖 AUTO TAG + SALVA CHAT
+# =========================
+# LIST USERS (FIXATA)
+# =========================
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not users:
+        return await update.message.reply_text("Vuoto")
+
+    msg = "\n".join([f"{k} → {v}" for k, v in users.items()])
+    await update.message.reply_text(msg)
+
+# =========================
+# AUTO TAG + SAVE GROUP
+# =========================
 async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global message_count, last_message_time, chat_id_global
+    global message_count, last_message_time
 
     if not update.message or not update.message.text:
         return
 
-    # salva chat automaticamente
-    chat_id_global = update.effective_chat.id
+    # salva gruppo automaticamente (MULTIGRUPPO)
+    chat_id = update.effective_chat.id
+    if chat_id not in groups:
+        groups.append(chat_id)
+        save_groups(groups)
 
     message_count += 1
     last_message_time = time.time()
@@ -83,16 +125,18 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if found:
         await update.message.reply_text(" ".join(set(found)))
 
-    # ogni 10 messaggi (più attivo)
-    if message_count % 10 == 0:
+    # ogni 20 messaggi
+    if message_count % 20 == 0:
         await update.message.reply_text(random.choice([
-            "👁️ vi sto osservando...",
-            "qualcosa non torna...",
-            "sto imparando...",
-            "sistema attivo..."
+            "non freca",
+            "no way",
+            "type shi",
+            "Sybau"
         ]))
 
-# 🤯 HUMAN BUG (più frequente)
+# =========================
+# HUMAN BUG (NON TOCCATE FRASI)
+# =========================
 last_bug_time = 0
 
 async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -112,19 +156,21 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     last_bug_time = now
 
     await update.message.reply_text(random.choice([
-    "errore... qualcosa non freca" 
-    "analizzando...troppe nane",
-    "strano... nessuno litiga oggi",
-    "sistema instabile...Galif è bianco",
-    "attenzione: comportamento sospetto, Vansh non sta simpando",
-    "qualcuno ha detto una minchiata",
-    "errore 404: Galif non trovato, è troppo negro",
-    "quanto cazzo parli Vansh",
-    "controllo in corso...nessuna nana avvistata 🤔",
-    "error 404: Vansh è troppo bianco ⚠️"
+        "errore... qualcosa non freca",
+        "analizzando... troppe nane",
+        "strano... nessuno litiga oggi",
+        "sistema instabile... Galif è bianco",
+        "attenzione: comportamento sospetto, Vansh non sta simpando",
+        "qualcuno ha detto una minchiata",
+        "errore 404: Galif non trovato, è troppo negro",
+        "quanto cazzo parli Vansh",
+        "controllo in corso... nessuna nana avvistata 🤔",
+        "error 404: Vansh è troppo bianco ⚠️"
     ]))
 
-# ⏱️ INATTIVITÀ (10 minuti veri)
+# =========================
+# INATTIVITÀ MULTIGRUPPO
+# =========================
 async def inactivity_bot(app):
     await asyncio.sleep(10)
 
@@ -134,24 +180,32 @@ async def inactivity_bot(app):
         idle = time.time() - last_message_time
 
         if idle > 600:  # 10 minuti
-            if chat_id_global:
-                await app.bot.send_message(
-                    chat_id_global,
-                    random.choice([
-                        "allora? cos'è tutti a farsi le seghe?",
-                        "cazzo è sto silenzio oh",
-                        "gruppo morto, tutti froci",
-                        "strano...troppo silenzio",
-                        "sistema instabile...tutti negri",
-                        "morto Vansh, morto il gruppo",
-                        "type shi",
-                        "Straight Up💔🥀",
-                        "nel dubbio, colpa di Vansh",
-                    ])
-                )
+            for chat_id in groups:
+                try:
+                    await app.bot.send_message(
+                        chat_id,
+                        random.choice([
+                            "allora? cos'è tutti a farsi le seghe?",
+                            "cazzo è sto silenzio oh",
+                            "gruppo morto, tutti froci",
+                            "strano...troppo silenzio",
+                            "sistema instabile...tutti negri",
+                            "morto Vansh, morto il gruppo",
+                            "type shi",
+                            "Straight Up💔🥀",
+                            "nel dubbio, colpa di Vansh",
+                        ])
+                    )
+                except:
+                    pass
 
-# ▶️ START
+# =========================
+# START
+# =========================
 app = ApplicationBuilder().token(TOKEN).build()
+
+app.add_handler(CommandHandler("add", add_user))
+app.add_handler(CommandHandler("list", list_users))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_bug))
