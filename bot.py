@@ -13,7 +13,6 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# 🔐 TOKEN (Railway Variables)
 TOKEN = os.getenv("BOT_TOKEN")
 
 FILE_DB = "users.json"
@@ -33,13 +32,14 @@ users = load_users()
 # 🧠 STATO BOT
 message_count = 0
 last_message_time = time.time()
+chat_id_global = None
 
 # 🔐 ADMIN CHECK
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    chat_id = update.effective_chat.id
-
-    member = await context.bot.get_chat_member(chat_id, user_id)
+    member = await context.bot.get_chat_member(
+        update.effective_chat.id,
+        update.effective_user.id
+    )
     return member.status in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]
 
 # ➕ ADD
@@ -50,117 +50,49 @@ async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return await update.message.reply_text("Solo admin ❌")
 
-    text = update.message.text or ""
-    lines = text.split("\n")[1:]
+    lines = (update.message.text or "").split("\n")[1:]
 
     if not lines:
         return await update.message.reply_text("Formato:\n/add\nnome → @tag")
 
-    added = []
-    errors = []
-
     for line in lines:
-        line = line.strip()
-
-        if "→" not in line:
-            continue
-
-        try:
+        if "→" in line:
             name, tag = line.split("→", 1)
-            name = name.strip().lower()
-            tag = tag.strip()
-
-            users[name] = tag
-            added.append(name)
-
-        except:
-            errors.append(line)
+            users[name.strip().lower()] = tag.strip()
 
     save_users(users)
+    await update.message.reply_text("Aggiunti ✅")
 
-    msg = ""
-    if added:
-        msg += "✅ Aggiunti:\n" + "\n".join(added)
-    if errors:
-        msg += "\n\n⚠️ Errori:\n" + "\n".join(errors)
-
-    await update.message.reply_text(msg)
-
-# ❌ REMOVE
-async def remove_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return await update.message.reply_text("Solo admin ❌")
-
-    if not context.args:
-        return await update.message.reply_text("Uso: /remove nome")
-
-    name = context.args[0].lower()
-
-    if name in users:
-        del users[name]
-        save_users(users)
-        await update.message.reply_text(f"Rimosso {name} 🗑")
-    else:
-        await update.message.reply_text("Utente non trovato")
-
-# ✏ EDIT
-async def edit_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return await update.message.reply_text("Solo admin ❌")
-
-    if len(context.args) < 2:
-        return await update.message.reply_text("Uso: /edit nome nuovo_tag")
-
-    name = context.args[0].lower()
-    new_tag = context.args[1]
-
-    if name in users:
-        users[name] = new_tag
-        save_users(users)
-        await update.message.reply_text("Aggiornato ✏")
-    else:
-        await update.message.reply_text("Nome non trovato")
-
-# 📋 LIST
-async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not users:
-        return await update.message.reply_text("Vuoto")
-
-    msg = "\n".join([f"{k} → {v}" for k, v in users.items()])
-    await update.message.reply_text(msg)
-
-# 🤖 AUTO TAG + COUNTER
+# 🤖 AUTO TAG + SALVA CHAT
 async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global message_count, last_message_time
+    global message_count, last_message_time, chat_id_global
 
     if not update.message or not update.message.text:
         return
 
+    # salva chat automaticamente
+    chat_id_global = update.effective_chat.id
+
     message_count += 1
     last_message_time = time.time()
 
-    text = update.message.text.lower()
-    clean_text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'[^\w\s]', '', update.message.text.lower())
 
-    found = []
-
-    for name in users:
-        if name.lower() in clean_text.split():
-            found.append(users[name])
+    found = [users[n] for n in users if n in text.split()]
 
     if found:
         await update.message.reply_text(" ".join(set(found)))
 
-    # 🤖 OGNI 30 MESSAGGI
-    if message_count % 30 == 0:
+    # ogni 10 messaggi (più attivo)
+    if message_count % 10 == 0:
         await update.message.reply_text(random.choice([
             "👁️ vi sto osservando...",
-            "analisi comportamento in corso...",
-            "tutto normale (forse)",
+            "qualcosa non torna...",
+            "sto imparando...",
             "sistema attivo..."
         ]))
 
-# 🤯 HUMAN BUG
+# 🤯 HUMAN BUG (più frequente)
 last_bug_time = 0
 
 async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,31 +103,28 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     now = time.time()
 
-    if now - last_bug_time < 60:
+    if now - last_bug_time < 20:
         return
 
-    if random.randint(1, 5) != 1:
+    if random.randint(1, 4) != 1:
         return
 
     last_bug_time = now
 
-    bug_messages = [
-        "errore... qualcosa non torna 🤨",
-        "analizzando... troppo silenzio...",
-        "bug rilevato 😳",
-        "strano... nessuno litiga oggi",
-        "sistema instabile...",
-        "attenzione: comportamento sospetto, Vansh non sta simpando",
-        "qualcuno ha detto una minchiata",
-        "errore 404: Galif non trovato, è troppo negro",
-        "sto imparando troppo da voi...",
-        "controllo in corso...nessuna nana avvistata 🤔",
-        "error 404: Vansh è troppo bianco ⚠️"
-    ]
+    await update.message.reply_text(random.choice([
+    "errore... qualcosa non freca" 
+    "analizzando...troppe nane",
+    "strano... nessuno litiga oggi",
+    "sistema instabile...Galif è bianco",
+    "attenzione: comportamento sospetto, Vansh non sta simpando",
+    "qualcuno ha detto una minchiata",
+    "errore 404: Galif non trovato, è troppo negro",
+    "quanto cazzo parli Vansh",
+    "controllo in corso...nessuna nana avvistata 🤔",
+    "error 404: Vansh è troppo bianco ⚠️"
+    ]))
 
-    await update.message.reply_text(random.choice(bug_messages))
-
-# ⏱️ INATTIVITÀ 10 MINUTI
+# ⏱️ INATTIVITÀ (10 minuti veri)
 async def inactivity_bot(app):
     await asyncio.sleep(10)
 
@@ -204,31 +133,25 @@ async def inactivity_bot(app):
 
         idle = time.time() - last_message_time
 
-        if idle > 10:
-            chat_id = -1002717082257/73541  # 🔴 METTI ID GRUPPO
-
-            if chat_id:
-                try:
-                    await app.bot.send_message(
-                        chat_id,
-                        random.choice([
-                            "allora? tutti a farsi le seghe?",
-                            "nessuno parla?",
-                            "Ufficiale: Gruppo morto",
-                            "Gruppo morto, tutti froci",
-                            "se non parla nessuno, vuoldire che Vansh è morto, e ci godo. Type shii"
-                        ])
-                    )
-                except:
-                    pass
+        if idle > 600:  # 10 minuti
+            if chat_id_global:
+                await app.bot.send_message(
+                    chat_id_global,
+                    random.choice([
+                        "allora? cos'è tutti a farsi le seghe?",
+                        "cazzo è sto silenzio oh",
+                        "gruppo morto, tutti froci",
+                        "strano...troppo silenzio",
+                        "sistema instabile...tutti negri",
+                        "morto Vansh, morto il gruppo",
+                        "type shi",
+                        "Straight Up💔🥀",
+                        "nel dubbio, colpa di Vansh",
+                    ])
+                )
 
 # ▶️ START
 app = ApplicationBuilder().token(TOKEN).build()
-
-app.add_handler(CommandHandler("add", add_user))
-app.add_handler(CommandHandler("remove", remove_user))
-app.add_handler(CommandHandler("edit", edit_user))
-app.add_handler(CommandHandler("list", list_users))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_bug))
@@ -239,5 +162,5 @@ async def post_init(app):
 app.post_init = post_init
 
 if __name__ == "__main__":
-    print("Bot avviato correttamente")
+    print("Bot avviato")
     app.run_polling()
