@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import random
+import time
 from telegram import Update, ChatMember
 from telegram.ext import (
     ApplicationBuilder,
@@ -119,6 +121,42 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if found:
         await update.message.reply_text(" ".join(set(found)), parse_mode="HTML")
 
+# 🤯 HUMAN BUG
+last_bug_time = 0
+
+async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global last_bug_time
+
+    if not update.message or not update.message.text:
+        return
+
+    now = time.time()
+
+    # cooldown (1 minuto)
+    if now - last_bug_time < 60:
+        return
+
+    # probabilità (1 su 20)
+    if random.randint(1, 20) != 1:
+        return
+
+    last_bug_time = now
+
+    bug_messages = [
+        "errore... qualcosa non torna 🤨",
+        "analizzando... troppo silenzio...",
+        "bug rilevato: qualcuno ha detto qualcosa di intelligente 😳",
+        "strano... nessuno sta litigando oggi",
+        "sistema instabile... troppe cavolate rilevate",
+        "attenzione: comportamento umano sospetto",
+        "qualcuno ha appena mentito, lo sento",
+        "errore 404: senso non trovato",
+        "sto imparando troppo da voi... aiuto",
+        "nessuna nana avvistata....che strano🤔"
+    ]
+
+    await update.message.reply_text(random.choice(bug_messages))
+
 # ▶️ START
 app = ApplicationBuilder().token(TOKEN).build()
 
@@ -126,9 +164,10 @@ app.add_handler(CommandHandler("add", add_user))
 app.add_handler(CommandHandler("remove", remove_user))
 app.add_handler(CommandHandler("edit", edit_user))
 app.add_handler(CommandHandler("list", list_users))
-app.add_handler(CommandHandler("mode", lambda u, c: None))  # opzionale
+app.add_handler(CommandHandler("mode", lambda u, c: None))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_bug))
 
 if __name__ == "__main__":
     print("Bot avviato correttamente")
