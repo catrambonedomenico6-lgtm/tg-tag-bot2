@@ -195,7 +195,7 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(random.choice(bug_messages))
 
-# ⏱️ INATTIVITÀ 20 MINUTI
+# ⏱️ INATTIVITÀ 10 MINUTI
 async def inactivity_bot(app):
     await asyncio.sleep(10)
 
@@ -204,7 +204,7 @@ async def inactivity_bot(app):
 
         idle = time.time() - last_message_time
 
-        if idle > 600:
+        if idle > 10:
             chat_id = -1002717082257/73541  # 🔴 METTI ID GRUPPO
 
             if chat_id:
