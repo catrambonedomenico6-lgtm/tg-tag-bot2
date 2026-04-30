@@ -174,7 +174,7 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if now - last_bug_time < 60:
         return
 
-    if random.randint(1, 20) != 1:
+    if random.randint(1, 5) != 1:
         return
 
     last_bug_time = now
@@ -185,11 +185,11 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "bug rilevato 😳",
         "strano... nessuno litiga oggi",
         "sistema instabile...",
-        "attenzione: comportamento sospetto",
-        "qualcuno ha mentito",
-        "errore 404: Galif non trovato",
+        "attenzione: comportamento sospetto, Vansh non sta simpando",
+        "qualcuno ha detto una minchiata",
+        "errore 404: Galif non trovato, è troppo negro",
         "sto imparando troppo da voi...",
-        "nessuna nana avvistata 🤔",
+        "controllo in corso...nessuna nana avvistata 🤔",
         "error 404: Vansh è troppo bianco ⚠️"
     ]
 
@@ -204,7 +204,7 @@ async def inactivity_bot(app):
 
         idle = time.time() - last_message_time
 
-        if idle > 1200:
+        if idle > 600:
             chat_id = -1002717082257/73541  # 🔴 METTI ID GRUPPO
 
             if chat_id:
