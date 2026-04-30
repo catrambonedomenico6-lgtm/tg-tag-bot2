@@ -39,27 +39,61 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ➕ ADD
 async def add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+
     if not await is_admin(update, context):
         return await update.message.reply_text("Solo admin ❌")
 
-    if not context.args:
-        return await update.message.reply_text("Uso: /add nome")
+    text = update.message.text or ""
 
-    name = context.args[0].lower()
+    # prende tutte le righe dopo /add
+    lines = text.split("\n")[1:]
 
-    if update.message.reply_to_message:
-        user = update.message.reply_to_message.from_user
-        tag = f"@{user.username}" if user.username else f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
-        users[name] = tag
+    if not lines:
+        return await update.message.reply_text(
+            "Formato:\n\n/add\nnome → @tag"
+        )
+
+    added = []
+    errors = []
+
+    for line in lines:
+        line = line.strip()
+
+        if not line or "→" not in line:
+            continue
+
+        try:
+            name, tag = line.split("→", 1)
+            name = name.strip().lower()
+            tag = tag.strip()
+
+            if not name or not tag:
+                errors.append(line)
+                continue
+
+            users[name] = tag
+            added.append(name)
+
+        except Exception:
+            errors.append(line)
+
+    # salva sempre in sicurezza
+    try:
         save_users(users)
-        return await update.message.reply_text(f"Aggiunto {name} ✅", parse_mode="HTML")
+    except Exception as e:
+        return await update.message.reply_text(f"Errore salvataggio ❌ {e}")
 
-    if len(context.args) > 1:
-        users[name] = context.args[1]
-        save_users(users)
-        return await update.message.reply_text(f"Aggiunto {name} ✅")
+    msg = ""
 
-    await update.message.reply_text("Formato non valido")
+    if added:
+        msg += "✅ Aggiunti:\n" + "\n".join(added)
+
+    if errors:
+        msg += "\n\n⚠️ Errori:\n" + "\n".join(errors)
+
+    await update.message.reply_text(msg or "Niente da aggiungere ❌")
 
 # ❌ REMOVE
 async def remove_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,12 +181,14 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "analizzando... troppo silenzio...",
         "bug rilevato: qualcuno ha detto qualcosa di intelligente 😳",
         "strano... nessuno sta litigando oggi",
-        "sistema instabile... troppe cavolate rilevate",
+        "sistema instabile... troppe stronzate rilevate",
         "attenzione: comportamento umano sospetto",
         "qualcuno ha appena mentito, lo sento",
-        "errore 404: senso non trovato",
+        "errore 404: Galif non trovato, troppo negro",
         "sto imparando troppo da voi... aiuto",
         "nessuna nana avvistata....che strano🤔"
+        "error 404: Vansh è troppo bianco"
+        "⚠️attenzione: Vansh sta simpando un po' troppo"
     ]
 
     await update.message.reply_text(random.choice(bug_messages))
