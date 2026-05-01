@@ -197,7 +197,7 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if now - last_bug_time < 15:
         return
 
-    if random.random() > 0.7:
+    if random.random() < 0.7:
         return
 
     last_bug_time = now
