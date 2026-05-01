@@ -57,6 +57,9 @@ groups = load_groups()
 message_count = 0
 last_message_time = time.time()
 
+# 🔇 SILENZIO (per gruppo)
+silenced_until = {}
+
 # =========================
 # ADMIN CHECK
 # =========================
@@ -66,6 +69,27 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.effective_user.id
     )
     return member.status in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]
+
+# =========================
+# COMANDO SILENZIO
+# =========================
+async def silence(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update, context):
+        return
+
+    chat_id = update.effective_chat.id
+    silenced_until[chat_id] = time.time() + 600  # 10 minuti
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="🤫 bot silenziato per 10 minuti"
+    )
+
+# =========================
+# CHECK SILENZIO
+# =========================
+def is_silenced(chat_id):
+    return chat_id in silenced_until and time.time() < silenced_until[chat_id]
 
 # =========================
 # ADD USERS
@@ -117,6 +141,9 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
 
+    if is_silenced(chat_id):
+        return
+
     if chat_id not in groups:
         groups.append(chat_id)
         save_groups(groups)
@@ -129,12 +156,15 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     found = [users[n] for n in users if n in text.split()]
 
+    # ✅ TAG = RISPOSTA AL MESSAGGIO
     if found:
         await context.bot.send_message(
             chat_id=chat_id,
-            text=" ".join(set(found))
+            text=" ".join(set(found)),
+            reply_to_message_id=update.message.message_id
         )
 
+    # ❗ resto normale
     if message_count % 20 == 0:
         await context.bot.send_message(
             chat_id=chat_id,
@@ -147,7 +177,7 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 # =========================
-# HUMAN BUG (FRASI NON MODIFICATE)
+# HUMAN BUG
 # =========================
 last_bug_time = 0
 
@@ -157,18 +187,23 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
 
-    now = time.time()
+    chat_id = update.effective_chat.id
 
-    if now - last_bug_time < 30:
+    if is_silenced(chat_id):
         return
 
-    if random.randint(1, 2) != 1:
+    now = time.time()
+
+    if now - last_bug_time < 15:
+        return
+
+    if random.random() > 0.7:
         return
 
     last_bug_time = now
 
     await context.bot.send_message(
-        chat_id=update.effective_chat.id,
+        chat_id=chat_id,
         text=random.choice([
             "errore... qualcosa non freca",
             "analizzando... troppe nane",
@@ -187,15 +222,21 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # INATTIVITÀ MULTIGRUPPO
 # =========================
 async def inactivity_bot(app):
-    await asyncio.sleep(600)
+    global last_message_time
+
+    await asyncio.sleep(1200)
 
     while True:
         await asyncio.sleep(60)
 
         idle = time.time() - last_message_time
 
-        if idle > 600:
+        if idle > 1200:
             for chat_id in groups:
+
+                if is_silenced(chat_id):
+                    continue
+
                 try:
                     await app.bot.send_message(
                         chat_id,
@@ -214,6 +255,8 @@ async def inactivity_bot(app):
                 except:
                     pass
 
+            last_message_time = time.time()
+
 # =========================
 # START
 # =========================
@@ -221,9 +264,10 @@ app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add_user))
 app.add_handler(CommandHandler("list", list_users))
+app.add_handler(CommandHandler("silenzio", silence))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_tag))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_bug))
+app.add_handler(MessageHandler(~filters.COMMAND, human_bug))
 
 async def post_init(app):
     asyncio.create_task(inactivity_bot(app))
