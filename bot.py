@@ -187,7 +187,7 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # INATTIVITÀ MULTIGRUPPO
 # =========================
 async def inactivity_bot(app):
-    await asyncio.sleep(10)
+    await asyncio.sleep(600)
 
     while True:
         await asyncio.sleep(60)
