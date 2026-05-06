@@ -172,7 +172,8 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "non freca",
                 "no way",
                 "type shi",
-                "Sybau"
+                "Sybau",
+                "non chiesi"
             ])
         )
 
@@ -250,6 +251,7 @@ async def inactivity_bot(app):
                             "type shi",
                             "Straight Up💔🥀",
                             "nel dubbio, colpa di Vansh",
+                            "porcodio parlate, è un gruppo, non un cimitero"
                         ])
                     )
                 except:
