@@ -225,14 +225,14 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def inactivity_bot(app):
     global last_message_time
 
-    await asyncio.sleep(1200)
+    await asyncio.sleep(3600)
 
     while True:
         await asyncio.sleep(60)
 
         idle = time.time() - last_message_time
 
-        if idle > 1200:
+        if idle > 3600:
             for chat_id in groups:
 
                 if is_silenced(chat_id):
