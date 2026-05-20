@@ -173,7 +173,8 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "no way",
                 "type shi",
                 "Sybau",
-                "non chiesi"
+                "non chiesi",
+                "Diocane zitto/a"
             ])
         )
 
@@ -215,7 +216,8 @@ async def human_bug(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "errore 404: Galif non trovato, è troppo negro",
             "quanto cazzo parli Vansh",
             "controllo in corso... nessuna nana avvistata 🤔",
-            "error 404: Vansh è troppo bianco ⚠️"
+            "error 404: Vansh è troppo bianco ⚠️",
+            "basta vansh, sappiamo che ti limoneresti carti e travis"
         ])
     )
 
@@ -251,7 +253,9 @@ async def inactivity_bot(app):
                             "type shi",
                             "Straight Up💔🥀",
                             "nel dubbio, colpa di Vansh",
-                            "porcodio parlate, è un gruppo, non un cimitero"
+                            "porcodio parlate, è un gruppo, non un cimitero",
+                            "controllando.....troppe 12enni....non va bene cazzo",
+                            "vansh vai a cagare dio porco"
                         ])
                     )
                 except:
