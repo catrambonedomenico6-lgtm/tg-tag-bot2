@@ -174,7 +174,8 @@ async def auto_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "type shi",
                 "Sybau",
                 "non chiesi",
-                "Diocane zitto/a"
+                "Diocane zitto/a",
+                "hell naw"
             ])
         )
 
@@ -255,7 +256,8 @@ async def inactivity_bot(app):
                             "nel dubbio, colpa di Vansh",
                             "porcodio parlate, è un gruppo, non un cimitero",
                             "controllando.....troppe 12enni....non va bene cazzo",
-                            "vansh vai a cagare dio porco"
+                            "vansh vai a cagare dio porco",
+                            "torna a cagare dio cane"
                         ])
                     )
                 except:
